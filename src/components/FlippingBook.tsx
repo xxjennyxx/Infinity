@@ -164,18 +164,13 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
     // If this page is flipped (on the left side), clicking it flips back
     if (isFlipped) {
       // Only the most recently flipped page can be flipped back
-      if (pageIndex === currentPage - 1) {
-        onPrevPage();
-      }
+      onPrevPage();
     } 
     // If this page is not flipped (on the right side), clicking it flips forward
     else {
-      // Only the top unflipped page can be flipped
-      if (pageIndex === currentPage) {
-        onNextPage();
-      }
+      onNextPage();
     }
-  }, [pageIndex, currentPage, isFlipped, onNextPage, onPrevPage]);
+  }, [isFlipped, onNextPage, onPrevPage]);
 
   // Page colors
   const frontColor = isCover || isBack ? '#2a1810' : '#f8f4eb';
