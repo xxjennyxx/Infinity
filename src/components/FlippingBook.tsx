@@ -100,6 +100,11 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
   const backRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
+  console.log({isCover});
+  console.log({isBack});
+  console.log({pageIndex});
+  console.log({currentPage});
+
   useCursor(hovered);
 
   // Determine if this page should be flipped
