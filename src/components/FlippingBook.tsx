@@ -20,33 +20,29 @@ const PAGE_SEGMENTS = 30;
 const BOOK_DEPTH = 0.4;
 const MIN_STACK_DEPTH = 0.02;
 
-// Z-offset per page - must be larger than decoration offset (0.005) to prevent z-fighting
-const PAGE_Z_OFFSET = 0.02;
+// Z-offset per page
+const PAGE_Z_OFFSET = 0.025;
 // Decoration offset from page surface
-const DECORATION_Z = 0.005;
+const DECORATION_Z = 0.008;
 
 // Dynamic page stack component
 function PageStacks({ currentPage, totalPages }: { currentPage: number; totalPages: number }) {
-  // Calculate how much of the book is read vs unread
   const readRatio = currentPage / (totalPages - 1);
   const unreadRatio = 1 - readRatio;
   
-  // Stack depths based on progress
   const maxStackDepth = BOOK_DEPTH / 2 - 0.02;
   const leftStackDepth = Math.max(readRatio * maxStackDepth, currentPage > 0 ? MIN_STACK_DEPTH : 0);
   const rightStackDepth = Math.max(unreadRatio * maxStackDepth, currentPage < totalPages - 1 ? MIN_STACK_DEPTH : 0);
 
   return (
     <group>
-      {/* Right side pages (unread) - only show if not at last page */}
+      {/* Right side pages (unread) */}
       {rightStackDepth > 0 && (
         <>
           <mesh position={[PAGE_WIDTH / 2, 0, -rightStackDepth / 2 - 0.01]} castShadow receiveShadow>
             <boxGeometry args={[PAGE_WIDTH, PAGE_HEIGHT - 0.05, rightStackDepth]} />
             <meshStandardMaterial color="#f5f0e8" roughness={0.95} />
           </mesh>
-
-          {/* Page edges texture - right */}
           <mesh position={[PAGE_WIDTH + 0.001, 0, -rightStackDepth / 2 - 0.01]}>
             <planeGeometry args={[rightStackDepth, PAGE_HEIGHT - 0.05]} />
             <meshStandardMaterial color="#e8e0d0" roughness={0.98} side={THREE.DoubleSide} />
@@ -54,15 +50,13 @@ function PageStacks({ currentPage, totalPages }: { currentPage: number; totalPag
         </>
       )}
 
-      {/* Left side pages (read) - only show if past first page */}
+      {/* Left side pages (read) */}
       {leftStackDepth > 0 && (
         <>
           <mesh position={[-PAGE_WIDTH / 2, 0, -leftStackDepth / 2 - 0.01]} castShadow receiveShadow>
             <boxGeometry args={[PAGE_WIDTH, PAGE_HEIGHT - 0.05, leftStackDepth]} />
             <meshStandardMaterial color="#f5f0e8" roughness={0.95} />
           </mesh>
-
-          {/* Page edges texture - left */}
           <mesh position={[-PAGE_WIDTH - 0.001, 0, -leftStackDepth / 2 - 0.01]} rotation={[0, Math.PI, 0]}>
             <planeGeometry args={[leftStackDepth, PAGE_HEIGHT - 0.05]} />
             <meshStandardMaterial color="#e8e0d0" roughness={0.98} side={THREE.DoubleSide} />
@@ -70,7 +64,7 @@ function PageStacks({ currentPage, totalPages }: { currentPage: number; totalPag
         </>
       )}
 
-      {/* Bottom page edge - spans both stacks */}
+      {/* Bottom page edge */}
       <mesh 
         position={[0, -PAGE_HEIGHT / 2 - 0.001, -(leftStackDepth + rightStackDepth) / 4 - 0.01]} 
         rotation={[Math.PI / 2, 0, 0]}
@@ -85,13 +79,14 @@ function PageStacks({ currentPage, totalPages }: { currentPage: number; totalPag
 interface PageProps {
   pageIndex: number;
   currentPage: number;
+  totalPages: number;
   isCover?: boolean;
   isBack?: boolean;
   onNextPage: () => void;
   onPrevPage: () => void;
 }
 
-function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage }: PageProps) {
+function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage, onPrevPage }: PageProps) {
   const groupRef = useRef<THREE.Group>(null);
   const frontRef = useRef<THREE.Mesh>(null);
   const backRef = useRef<THREE.Mesh>(null);
@@ -112,27 +107,41 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
   const isCurrentRightPage = pageIndex === currentPage;
   const isCurrentLeftPage = pageIndex === currentPage - 1;
 
-  // Animate page flip with bending effect
+  // Calculate z-offset based on flip state
+  // RIGHT SIDE (not flipped): lower pageIndex = higher z (in front)
+  // LEFT SIDE (flipped): higher pageIndex = higher z (in front, most recent flip on top)
+  const getZOffset = () => {
+    if (isFlipped) {
+      // Flipped pages: higher pageIndex should be in front
+      // pageIndex ranges from 0 to currentPage-1 for flipped pages
+      return pageIndex * PAGE_Z_OFFSET;
+    } else {
+      // Unflipped pages: lower pageIndex should be in front
+      return (totalPages - pageIndex) * PAGE_Z_OFFSET;
+    }
+  };
+
+  // Animate page flip with bending effect and dynamic z-offset
   useFrame(() => {
     if (!groupRef.current || !frontRef.current || !backRef.current) return;
 
     const currentAngle = groupRef.current.rotation.y;
     const angleDiff = targetAngle - currentAngle;
     
-    // Smooth spring animation
+    // Update z position based on flip state
+    const targetZ = getZOffset();
+    groupRef.current.position.z += (targetZ - groupRef.current.position.z) * 0.15;
+    
+    // Smooth spring animation for rotation
     if (Math.abs(angleDiff) > 0.001) {
       groupRef.current.rotation.y += angleDiff * 0.1;
       
-      // Calculate flip progress (0 to 1)
       const progress = Math.abs(groupRef.current.rotation.y) / Math.PI;
-      
-      // Apply bending to geometry
       applyPageBend(frontRef.current.geometry as THREE.PlaneGeometry, progress);
       applyPageBend(backRef.current.geometry as THREE.PlaneGeometry, progress);
     }
   });
 
-  // Apply bending deformation during flip
   const applyPageBend = (geometry: THREE.PlaneGeometry, progress: number) => {
     const positions = geometry.attributes.position;
     const originalPositions = geometry.userData.originalPositions;
@@ -147,11 +156,7 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
     for (let i = 0; i < positions.count; i++) {
       const originalX = originalPositions[i * 3];
       const originalY = originalPositions[i * 3 + 1];
-      
-      // Normalize X from 0 (spine) to 1 (edge)
       const normalizedX = originalX / PAGE_WIDTH;
-      
-      // Bend curve - more bend toward the edge
       const bend = Math.sin(normalizedX * Math.PI * 0.8) * bendStrength * normalizedX;
       
       positions.setX(i, originalX);
@@ -167,34 +172,26 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
   const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     
-    // If this page is flipped and is the most recently flipped page, flip back
     if (isFlipped && isCurrentLeftPage) {
       onPrevPage();
-    } 
-    // If this page is not flipped and is the current top page, flip forward
-    else if (!isFlipped && isCurrentRightPage) {
+    } else if (!isFlipped && isCurrentRightPage) {
       onNextPage();
     }
   }, [isFlipped, isCurrentLeftPage, isCurrentRightPage, onNextPage, onPrevPage]);
 
-  // Page colors
   const frontColor = isCover || isBack ? '#2a1810' : '#f8f4eb';
   const backColor = '#f8f4eb';
-
-  // Z offset to prevent z-fighting - higher pageIndex = further back
-  // This ensures cover (index 0) is always in front when not flipped
-  const zOffset = (pages.length - pageIndex) * PAGE_Z_OFFSET;
 
   return (
     <group
       ref={groupRef}
-      position={[0, 0, zOffset]}
+      position={[0, 0, getZOffset()]}
       rotation={[0, 0, 0]}
     >
-      {/* Front face of page */}
+      {/* Front face */}
       <mesh
         ref={frontRef}
-        position={[PAGE_WIDTH / 2, 0, 0.001]}
+        position={[PAGE_WIDTH / 2, 0, 0.002]}
         onClick={handleClick}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
@@ -210,10 +207,10 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
         />
       </mesh>
 
-      {/* Back face of page - also clickable for flipping back */}
+      {/* Back face */}
       <mesh
         ref={backRef}
-        position={[PAGE_WIDTH / 2, 0, -0.001]}
+        position={[PAGE_WIDTH / 2, 0, -0.002]}
         onClick={handleClick}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
@@ -229,10 +226,9 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
         />
       </mesh>
 
-      {/* Cover decorations - only on front cover */}
-      {isCover && (
+      {/* Cover decorations (front) */}
+      {isCover && !isFlipped && (
         <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
-          {/* Gold frame lines */}
           <mesh position={[0, 0.9, 0]}>
             <planeGeometry args={[1.6, 0.03]} />
             <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
@@ -241,8 +237,6 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
             <planeGeometry args={[1.6, 0.03]} />
             <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
           </mesh>
-          
-          {/* Center diamond */}
           <mesh rotation={[0, 0, Math.PI / 4]}>
             <planeGeometry args={[0.35, 0.35]} />
             <meshStandardMaterial 
@@ -253,8 +247,6 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
               emissiveIntensity={hovered ? 0.4 : 0.15}
             />
           </mesh>
-
-          {/* Corner dots */}
           {[[-0.7, 1.2], [0.7, 1.2], [-0.7, -1.2], [0.7, -1.2]].map(([x, y], i) => (
             <mesh key={i} position={[x, y, 0]}>
               <circleGeometry args={[0.05, 16]} />
@@ -264,15 +256,23 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
         </group>
       )}
 
-      {/* Back cover decorations */}
-      {isBack && (
+      {/* Inside cover (back of cover, when flipped) */}
+      {isCover && isFlipped && (
+        <group position={[PAGE_WIDTH / 2, 0, -DECORATION_Z]} rotation={[0, Math.PI, 0]}>
+          <mesh>
+            <planeGeometry args={[PAGE_WIDTH - 0.2, PAGE_HEIGHT - 0.2]} />
+            <meshStandardMaterial color="#e8dcc8" roughness={0.92} />
+          </mesh>
+        </group>
+      )}
+
+      {/* Back cover decorations (front of back cover) */}
+      {isBack && !isFlipped && (
         <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
-          {/* Simple border */}
-          <mesh position={[0, 0, 0]}>
+          <mesh>
             <planeGeometry args={[PAGE_WIDTH - 0.3, PAGE_HEIGHT - 0.3]} />
             <meshStandardMaterial color="#231510" roughness={0.85} />
           </mesh>
-          {/* Corner dots */}
           {[[-0.7, 1.1], [0.7, 1.1], [-0.7, -1.1], [0.7, -1.1]].map(([x, y], i) => (
             <mesh key={i} position={[x, y, 0.001]}>
               <circleGeometry args={[0.04, 16]} />
@@ -282,20 +282,17 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
         </group>
       )}
 
-      {/* Content page decorations - ONLY show on current visible page */}
+      {/* Content page FRONT decorations (visible when not flipped) */}
       {!isCover && !isBack && !isFlipped && (
         <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
-          {/* Photo placeholder */}
           <mesh position={[0, 0.3, 0]}>
             <planeGeometry args={[1.5, 1.1]} />
             <meshStandardMaterial color="#e8e0d0" roughness={0.95} />
           </mesh>
-          {/* Tape */}
           <mesh position={[0, 0.9, 0.001]} rotation={[0, 0, 0.08]}>
             <planeGeometry args={[0.5, 0.1]} />
             <meshStandardMaterial color="#f5efdc" transparent opacity={0.85} />
           </mesh>
-          {/* Lines for text */}
           {[-0.5, -0.7, -0.9].map((y, i) => (
             <mesh key={i} position={[0, y, 0]}>
               <planeGeometry args={[1.4, 0.015]} />
@@ -305,20 +302,17 @@ function Page({ pageIndex, currentPage, isCover, isBack, onNextPage, onPrevPage 
         </group>
       )}
 
-      {/* Back of content page (visible when flipped) */}
+      {/* Content page BACK decorations (visible when flipped) */}
       {!isCover && !isBack && isFlipped && (
         <group position={[PAGE_WIDTH / 2, 0, -DECORATION_Z]} rotation={[0, Math.PI, 0]}>
-          {/* Photo placeholder */}
           <mesh position={[0, 0.3, 0]}>
             <planeGeometry args={[1.5, 1.1]} />
             <meshStandardMaterial color="#e8e0d0" roughness={0.95} />
           </mesh>
-          {/* Tape */}
           <mesh position={[0, 0.9, 0.001]} rotation={[0, 0, -0.08]}>
             <planeGeometry args={[0.5, 0.1]} />
             <meshStandardMaterial color="#f5efdc" transparent opacity={0.85} />
           </mesh>
-          {/* Lines for text */}
           {[-0.5, -0.7, -0.9].map((y, i) => (
             <mesh key={i} position={[0, y, 0]}>
               <planeGeometry args={[1.4, 0.015]} />
@@ -336,7 +330,7 @@ interface FlippingBookProps {
 }
 
 export function FlippingBook({ onItemClick }: FlippingBookProps) {
-  void onItemClick; // Will be used later
+  void onItemClick;
   
   const [currentPage, setCurrentPage] = useState(0);
   const bookRef = useRef<THREE.Group>(null);
@@ -349,7 +343,6 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
     setCurrentPage(prev => Math.max(prev - 1, 0));
   }, []);
 
-  // Subtle floating animation
   useFrame((state) => {
     if (bookRef.current) {
       bookRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.4) * 0.03;
@@ -359,7 +352,7 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
 
   return (
     <group ref={bookRef} position={[0, 0, 0]} rotation={[-0.25, 0, 0]}>
-      {/* ===== BOOK SPINE ===== */}
+      {/* Book Spine */}
       <mesh position={[-0.08, 0, 0]} castShadow>
         <boxGeometry args={[0.16, PAGE_HEIGHT + 0.1, BOOK_DEPTH]} />
         <meshStandardMaterial color="#1a0f08" roughness={0.85} metalness={0.05} />
@@ -371,15 +364,16 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
         <meshStandardMaterial color="#c9a050" metalness={0.7} roughness={0.3} />
       </mesh>
 
-      {/* ===== DYNAMIC PAGE STACKS ===== */}
+      {/* Dynamic Page Stacks */}
       <PageStacks currentPage={currentPage} totalPages={pages.length} />
 
-      {/* ===== FLIPPING PAGES ===== */}
+      {/* Flipping Pages */}
       {pages.map((page, index) => (
         <Page
           key={page.id}
           pageIndex={index}
           currentPage={currentPage}
+          totalPages={pages.length}
           isCover={page.type === 'cover'}
           isBack={page.type === 'back'}
           onNextPage={handleNextPage}
@@ -387,7 +381,7 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
         />
       ))}
 
-      {/* ===== PAGE INDICATOR ===== */}
+      {/* Page Indicator */}
       <group position={[0, -PAGE_HEIGHT / 2 - 0.4, 0.2]}>
         {pages.map((_, i) => (
           <mesh key={i} position={[(i - (pages.length - 1) / 2) * 0.18, 0, 0]}>
@@ -401,15 +395,15 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
         ))}
       </group>
 
-      {/* ===== CLICK HINTS ===== */}
+      {/* Click Hints */}
       {currentPage < pages.length - 1 && (
-        <mesh position={[PAGE_WIDTH - 0.15, 0, 0.15]}>
+        <mesh position={[PAGE_WIDTH - 0.15, 0, 0.2]}>
           <planeGeometry args={[0.08, 0.25]} />
           <meshBasicMaterial color="#c9a050" transparent opacity={0.5} />
         </mesh>
       )}
       {currentPage > 0 && (
-        <mesh position={[-PAGE_WIDTH + 0.15, 0, 0.15]}>
+        <mesh position={[-PAGE_WIDTH + 0.15, 0, 0.2]}>
           <planeGeometry args={[0.08, 0.25]} />
           <meshBasicMaterial color="#c9a050" transparent opacity={0.5} />
         </mesh>
