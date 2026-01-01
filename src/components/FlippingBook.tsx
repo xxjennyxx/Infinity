@@ -26,13 +26,21 @@ const PAGE_Z_OFFSET = 0.025;
 const DECORATION_Z = 0.008;
 
 // Dynamic page stack component
+// Only show left stack when content pages are flipped (not just the cover)
 function PageStacks({ currentPage, totalPages }: { currentPage: number; totalPages: number }) {
-  const readRatio = currentPage / (totalPages - 1);
-  const unreadRatio = 1 - readRatio;
+  // Content pages start at index 1 (after cover)
+  // Only count content pages for the left stack (subtract 1 for cover)
+  const flippedContentPages = Math.max(0, currentPage - 1);
+  const totalContentPages = totalPages - 2; // Exclude cover and back
+  
+  const readRatio = flippedContentPages / totalContentPages;
+  const unreadRatio = 1 - (currentPage / (totalPages - 1));
   
   const maxStackDepth = BOOK_DEPTH / 2 - 0.02;
-  const leftStackDepth = Math.max(readRatio * maxStackDepth, currentPage > 0 ? MIN_STACK_DEPTH : 0);
-  const rightStackDepth = Math.max(unreadRatio * maxStackDepth, currentPage < totalPages - 1 ? MIN_STACK_DEPTH : 0);
+  // Left stack only shows when content pages are flipped (currentPage > 1)
+  const leftStackDepth = currentPage > 1 ? Math.max(readRatio * maxStackDepth, MIN_STACK_DEPTH) : 0;
+  // Right stack shows when there are unflipped pages
+  const rightStackDepth = currentPage < totalPages - 1 ? Math.max(unreadRatio * maxStackDepth, MIN_STACK_DEPTH) : 0;
 
   return (
     <group>
@@ -50,7 +58,7 @@ function PageStacks({ currentPage, totalPages }: { currentPage: number; totalPag
         </>
       )}
 
-      {/* Left side pages (read) */}
+      {/* Left side pages (read) - only show after flipping content pages */}
       {leftStackDepth > 0 && (
         <>
           <mesh position={[-PAGE_WIDTH / 2, 0, -leftStackDepth / 2 - 0.01]} castShadow receiveShadow>
@@ -65,13 +73,15 @@ function PageStacks({ currentPage, totalPages }: { currentPage: number; totalPag
       )}
 
       {/* Bottom page edge */}
-      <mesh 
-        position={[0, -PAGE_HEIGHT / 2 - 0.001, -(leftStackDepth + rightStackDepth) / 4 - 0.01]} 
-        rotation={[Math.PI / 2, 0, 0]}
-      >
-        <planeGeometry args={[PAGE_WIDTH * 2 + 0.1, Math.max(leftStackDepth, rightStackDepth, MIN_STACK_DEPTH)]} />
-        <meshStandardMaterial color="#ece4d4" roughness={0.95} />
-      </mesh>
+      {(leftStackDepth > 0 || rightStackDepth > 0) && (
+        <mesh 
+          position={[0, -PAGE_HEIGHT / 2 - 0.001, -(leftStackDepth + rightStackDepth) / 4 - 0.01]} 
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <planeGeometry args={[PAGE_WIDTH * 2 + 0.1, Math.max(leftStackDepth, rightStackDepth, MIN_STACK_DEPTH)]} />
+          <meshStandardMaterial color="#ece4d4" roughness={0.95} />
+        </mesh>
+      )}
     </group>
   );
 }
@@ -107,32 +117,24 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
   const isCurrentRightPage = pageIndex === currentPage;
   const isCurrentLeftPage = pageIndex === currentPage - 1;
 
-  // Calculate z-offset based on flip state
-  // RIGHT SIDE (not flipped): lower pageIndex = higher z (in front)
-  // LEFT SIDE (flipped): higher pageIndex = higher z (in front, most recent flip on top)
+  // Z-offset based on flip state
   const getZOffset = () => {
     if (isFlipped) {
-      // Flipped pages: higher pageIndex should be in front
-      // pageIndex ranges from 0 to currentPage-1 for flipped pages
       return pageIndex * PAGE_Z_OFFSET;
     } else {
-      // Unflipped pages: lower pageIndex should be in front
       return (totalPages - pageIndex) * PAGE_Z_OFFSET;
     }
   };
 
-  // Animate page flip with bending effect and dynamic z-offset
   useFrame(() => {
     if (!groupRef.current || !frontRef.current || !backRef.current) return;
 
     const currentAngle = groupRef.current.rotation.y;
     const angleDiff = targetAngle - currentAngle;
     
-    // Update z position based on flip state
     const targetZ = getZOffset();
     groupRef.current.position.z += (targetZ - groupRef.current.position.z) * 0.15;
     
-    // Smooth spring animation for rotation
     if (Math.abs(angleDiff) > 0.001) {
       groupRef.current.rotation.y += angleDiff * 0.1;
       
@@ -168,7 +170,6 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
     geometry.computeVertexNormals();
   };
 
-  // Handle click - only respond if this is the current active page
   const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     
@@ -179,8 +180,11 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
     }
   }, [isFlipped, isCurrentLeftPage, isCurrentRightPage, onNextPage, onPrevPage]);
 
+  // Cover: dark brown front, parchment back
+  // Content pages: parchment both sides
+  // Back cover: dark brown front, parchment back
   const frontColor = isCover || isBack ? '#2a1810' : '#f8f4eb';
-  const backColor = '#f8f4eb';
+  const backColor = isCover ? '#e8dcc8' : '#f8f4eb'; // Inside cover is parchment
 
   return (
     <group
@@ -226,7 +230,7 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
         />
       </mesh>
 
-      {/* Cover decorations (front) */}
+      {/* Cover front decorations (only when not flipped) */}
       {isCover && !isFlipped && (
         <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
           <mesh position={[0, 0.9, 0]}>
@@ -256,17 +260,7 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
         </group>
       )}
 
-      {/* Inside cover (back of cover, when flipped) */}
-      {isCover && isFlipped && (
-        <group position={[PAGE_WIDTH / 2, 0, -DECORATION_Z]} rotation={[0, Math.PI, 0]}>
-          <mesh>
-            <planeGeometry args={[PAGE_WIDTH - 0.2, PAGE_HEIGHT - 0.2]} />
-            <meshStandardMaterial color="#e8dcc8" roughness={0.92} />
-          </mesh>
-        </group>
-      )}
-
-      {/* Back cover decorations (front of back cover) */}
+      {/* Back cover front decorations */}
       {isBack && !isFlipped && (
         <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
           <mesh>
@@ -282,7 +276,7 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
         </group>
       )}
 
-      {/* Content page FRONT decorations (visible when not flipped) */}
+      {/* Content page FRONT decorations */}
       {!isCover && !isBack && !isFlipped && (
         <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
           <mesh position={[0, 0.3, 0]}>
