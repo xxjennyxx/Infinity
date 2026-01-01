@@ -72,10 +72,6 @@ function App() {
               <p className="font-body text-parchment/40 text-sm italic">
                 Click the edge of the page to flip
               </p>
-              <div className="flex justify-center gap-8 mt-4 text-xs text-parchment/30">
-                <span>← Previous</span>
-                <span>Next →</span>
-              </div>
             </motion.div>
           </motion.div>
         )}
