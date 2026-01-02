@@ -184,7 +184,7 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
   // Content pages: parchment both sides
   // Back cover: dark brown front, parchment back
   const frontColor = isCover || isBack ? '#2a1810' : '#f8f4eb';
-  const backColor = isCover ? '#e8dcc8' : '#f8f4eb'; // Inside cover is parchment
+  const backColor = isCover ? '#2a1810' : '#f8f4eb'; 
 
   return (
     <group
@@ -254,6 +254,23 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
           {[[-0.7, 1.2], [0.7, 1.2], [-0.7, -1.2], [0.7, -1.2]].map(([x, y], i) => (
             <mesh key={i} position={[x, y, 0]}>
               <circleGeometry args={[0.05, 16]} />
+              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* Inside cover decorations (when flipped to the left) */}
+      {isCover && isFlipped && (
+        <group position={[PAGE_WIDTH / 2, 0, -DECORATION_Z]} rotation={[0, Math.PI, 0]}>
+          <mesh>
+            <planeGeometry args={[PAGE_WIDTH - 0.3, PAGE_HEIGHT - 0.3]} />
+            <meshStandardMaterial color="#231510" roughness={0.85} />
+          </mesh>
+          {/* Four corner dots */}
+          {[[-0.7, 1.1], [0.7, 1.1], [-0.7, -1.1], [0.7, -1.1]].map(([x, y], i) => (
+            <mesh key={i} position={[x, y, 0.001]}>
+              <circleGeometry args={[0.04, 16]} />
               <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
             </mesh>
           ))}
