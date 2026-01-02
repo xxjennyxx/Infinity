@@ -358,20 +358,6 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
           </mesh>
         ))}
       </group>
-
-      {/* Click Hints */}
-      {currentPage < pages.length && (
-        <mesh position={[PAGE_WIDTH - 0.15, 0, 0.2]}>
-          <planeGeometry args={[0.08, 0.25]} />
-          <meshBasicMaterial color="#c9a050" transparent opacity={0.5} />
-        </mesh>
-      )}
-      {currentPage > 0 && (
-        <mesh position={[-PAGE_WIDTH + 0.15, 0, 0.2]}>
-          <planeGeometry args={[0.08, 0.25]} />
-          <meshBasicMaterial color="#c9a050" transparent opacity={0.5} />
-        </mesh>
-      )}
     </group>
   );
 }
