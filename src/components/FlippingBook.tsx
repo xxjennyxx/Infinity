@@ -184,7 +184,7 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
   // Content pages: parchment both sides
   // Back cover: dark brown front, parchment back
   const frontColor = isCover || isBack ? '#2a1810' : '#f8f4eb';
-  const backColor = isCover ? '#2a1810' : '#f8f4eb'; 
+  const backColor = isCover || isBack ? '#2a1810' : '#f8f4eb';
 
   return (
     <group
@@ -293,6 +293,22 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
         </group>
       )}
 
+      {/* Back cover back decorations (when flipped to the left) */}
+      {isBack && isFlipped && (
+        <group position={[PAGE_WIDTH / 2, 0, -DECORATION_Z]} rotation={[0, Math.PI, 0]}>
+          <mesh>
+            <planeGeometry args={[PAGE_WIDTH - 0.3, PAGE_HEIGHT - 0.3]} />
+            <meshStandardMaterial color="#231510" roughness={0.85} />
+          </mesh>
+          {[[-0.7, 1.1], [0.7, 1.1], [-0.7, -1.1], [0.7, -1.1]].map(([x, y], i) => (
+            <mesh key={i} position={[x, y, 0.001]}>
+              <circleGeometry args={[0.04, 16]} />
+              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
       {/* Content page FRONT decorations */}
       {!isCover && !isBack && !isFlipped && (
         <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
@@ -347,7 +363,7 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
   const bookRef = useRef<THREE.Group>(null);
 
   const handleNextPage = useCallback(() => {
-    setCurrentPage(prev => Math.min(prev + 1, pages.length - 1));
+    setCurrentPage(prev => Math.min(prev + 1, pages.length));
   }, []);
 
   const handlePrevPage = useCallback(() => {
@@ -407,7 +423,7 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
       </group>
 
       {/* Click Hints */}
-      {currentPage < pages.length - 1 && (
+      {currentPage < pages.length && (
         <mesh position={[PAGE_WIDTH - 0.15, 0, 0.2]}>
           <planeGeometry args={[0.08, 0.25]} />
           <meshBasicMaterial color="#c9a050" transparent opacity={0.5} />
