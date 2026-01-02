@@ -25,66 +25,6 @@ const PAGE_Z_OFFSET = 0.025;
 // Decoration offset from page surface
 const DECORATION_Z = 0.008;
 
-// Dynamic page stack component
-// Only show left stack when content pages are flipped (not just the cover)
-function PageStacks({ currentPage, totalPages }: { currentPage: number; totalPages: number }) {
-  // Content pages start at index 1 (after cover)
-  // Only count content pages for the left stack (subtract 1 for cover)
-  const flippedContentPages = Math.max(0, currentPage - 1);
-  const totalContentPages = totalPages - 2; // Exclude cover and back
-  
-  const readRatio = flippedContentPages / totalContentPages;
-  const unreadRatio = 1 - (currentPage / (totalPages - 1));
-  
-  const maxStackDepth = BOOK_DEPTH / 2 - 0.02;
-  // Left stack only shows when content pages are flipped (currentPage > 1)
-  const leftStackDepth = currentPage > 1 ? Math.max(readRatio * maxStackDepth, MIN_STACK_DEPTH) : 0;
-  // Right stack shows when there are unflipped pages
-  const rightStackDepth = currentPage < totalPages - 1 ? Math.max(unreadRatio * maxStackDepth, MIN_STACK_DEPTH) : 0;
-
-  return (
-    <group>
-      {/* Right side pages (unread) */}
-      {rightStackDepth > 0 && (
-        <>
-          <mesh position={[PAGE_WIDTH / 2, 0, -rightStackDepth / 2 - 0.01]} castShadow receiveShadow>
-            <boxGeometry args={[PAGE_WIDTH, PAGE_HEIGHT - 0.05, rightStackDepth]} />
-            <meshStandardMaterial color="#f5f0e8" roughness={0.95} />
-          </mesh>
-          <mesh position={[PAGE_WIDTH + 0.001, 0, -rightStackDepth / 2 - 0.01]}>
-            <planeGeometry args={[rightStackDepth, PAGE_HEIGHT - 0.05]} />
-            <meshStandardMaterial color="#e8e0d0" roughness={0.98} side={THREE.DoubleSide} />
-          </mesh>
-        </>
-      )}
-
-      {/* Left side pages (read) - only show after flipping content pages */}
-      {leftStackDepth > 0 && (
-        <>
-          <mesh position={[-PAGE_WIDTH / 2, 0, -leftStackDepth / 2 - 0.01]} castShadow receiveShadow>
-            <boxGeometry args={[PAGE_WIDTH, PAGE_HEIGHT - 0.05, leftStackDepth]} />
-            <meshStandardMaterial color="#f5f0e8" roughness={0.95} />
-          </mesh>
-          <mesh position={[-PAGE_WIDTH - 0.001, 0, -leftStackDepth / 2 - 0.01]} rotation={[0, Math.PI, 0]}>
-            <planeGeometry args={[leftStackDepth, PAGE_HEIGHT - 0.05]} />
-            <meshStandardMaterial color="#e8e0d0" roughness={0.98} side={THREE.DoubleSide} />
-          </mesh>
-        </>
-      )}
-
-      {/* Bottom page edge */}
-      {(leftStackDepth > 0 || rightStackDepth > 0) && (
-        <mesh 
-          position={[0, -PAGE_HEIGHT / 2 - 0.001, -(leftStackDepth + rightStackDepth) / 4 - 0.01]} 
-          rotation={[Math.PI / 2, 0, 0]}
-        >
-          <planeGeometry args={[PAGE_WIDTH * 2 + 0.1, Math.max(leftStackDepth, rightStackDepth, MIN_STACK_DEPTH)]} />
-          <meshStandardMaterial color="#ece4d4" roughness={0.95} />
-        </mesh>
-      )}
-    </group>
-  );
-}
 
 interface PageProps {
   pageIndex: number;
@@ -390,9 +330,6 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
         <planeGeometry args={[0.1, PAGE_HEIGHT * 0.7]} />
         <meshStandardMaterial color="#c9a050" metalness={0.7} roughness={0.3} />
       </mesh>
-
-      {/* Dynamic Page Stacks */}
-      <PageStacks currentPage={currentPage} totalPages={pages.length} />
 
       {/* Flipping Pages */}
       {pages.map((page, index) => (
