@@ -7,7 +7,7 @@ type ViewMode = 'book' | 'detail';
 
 function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('book');
-  const [selectedMemory, setSelectedMemory] = useState<string | null>(null);
+  const [_selectedMemory, setSelectedMemory] = useState<string | null>(null);
 
   const handleItemClick = useCallback((itemId: string) => {
     setSelectedMemory(itemId);

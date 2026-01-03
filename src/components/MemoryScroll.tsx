@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
-import { memories, Memory } from '../data/memories';
+import { memories } from '../data/memories';
+import type { Memory } from '../data/memories';
 
 interface MemoryCardProps {
   memory: Memory;
