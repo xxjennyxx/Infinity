@@ -17,8 +17,7 @@ const pages = [
 const PAGE_WIDTH = 2.2;
 const PAGE_HEIGHT = 3;
 const PAGE_SEGMENTS = 30;
-const BOOK_DEPTH = 0.4;
-const MIN_STACK_DEPTH = 0.02;
+const BOOK_DEPTH = 0.05;
 
 // Z-offset per page
 const PAGE_Z_OFFSET = 0.025;
