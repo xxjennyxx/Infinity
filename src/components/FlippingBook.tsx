@@ -17,7 +17,7 @@ const pages = [
 const PAGE_WIDTH = 2.2;
 const PAGE_HEIGHT = 3;
 const PAGE_SEGMENTS = 30;
-const BOOK_DEPTH = 0.05;
+const BOOK_DEPTH = 0.1;
 
 // Z-offset per page
 const PAGE_Z_OFFSET = 0.025;
@@ -300,6 +300,7 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
   
   const [currentPage, setCurrentPage] = useState(0);
   const bookRef = useRef<THREE.Group>(null);
+  const spineRef = useRef<THREE.Group>(null);
 
   const handleNextPage = useCallback(() => {
     setCurrentPage(prev => Math.min(prev + 1, pages.length));
@@ -314,21 +315,39 @@ export function FlippingBook({ onItemClick }: FlippingBookProps) {
       bookRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.4) * 0.03;
       bookRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.015;
     }
+    
+    // Animate spine rotation based on book state
+    if (spineRef.current) {
+      // Spine rotation based on book state:
+      // - Book closed (cover): 270 degrees (Math.PI * 1.5)
+      // - Book open: 180 degrees (Math.PI)
+      // - Book closed (back cover): 90 degrees (Math.PI / 2)
+      let targetRotation = Math.PI; // default: book open
+      if (currentPage === 0) {
+        targetRotation = Math.PI * 1.5; // 270 degrees - cover facing forward
+      } else if (currentPage === pages.length) {
+        targetRotation = Math.PI / 2; // 90 degrees - back cover facing forward
+      }
+      const currentRotation = spineRef.current.rotation.y;
+      spineRef.current.rotation.y += (targetRotation - currentRotation) * 0.1;
+    }
   });
 
   return (
     <group ref={bookRef} position={[0, 0, 0]} rotation={[-0.25, 0, 0]}>
-      {/* Book Spine */}
-      <mesh position={[-0.08, 0, 0]} castShadow>
-        <boxGeometry args={[0.16, PAGE_HEIGHT + 0.1, BOOK_DEPTH]} />
-        <meshStandardMaterial color="#1a0f08" roughness={0.85} metalness={0.05} />
-      </mesh>
+      {/* Book Spine - rotates based on book open/close state */}
+      <group ref={spineRef} position={[0, 0, BOOK_DEPTH / 2]}>
+        <mesh position={[0, 0, 0]} castShadow>
+          <boxGeometry args={[0.16, PAGE_HEIGHT + 0.1, BOOK_DEPTH]} />
+          <meshStandardMaterial color="#1a0f08" roughness={0.85} metalness={0.05} />
+        </mesh>
 
-      {/* Spine gold decoration */}
-      <mesh position={[-0.08, 0, BOOK_DEPTH / 2 + 0.001]}>
-        <planeGeometry args={[0.1, PAGE_HEIGHT * 0.7]} />
-        <meshStandardMaterial color="#c9a050" metalness={0.7} roughness={0.3} />
-      </mesh>
+        {/* Spine gold decoration */}
+        <mesh position={[0, 0, BOOK_DEPTH / 2 + 0.001]}>
+          <planeGeometry args={[0.1, PAGE_HEIGHT * 0.7]} />
+          <meshStandardMaterial color="#c9a050" metalness={0.7} roughness={0.3} />
+        </mesh>
+      </group>
 
       {/* Flipping Pages */}
       {pages.map((page, index) => (
