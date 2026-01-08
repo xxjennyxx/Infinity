@@ -131,7 +131,7 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
       position={[0, 0, getZOffset()]}
       rotation={[0, 0, 0]}
     >
-      {/* Front face */}
+      {/* Front face - pivot from left edge (x=0) */}
       <mesh
         ref={frontRef}
         position={[PAGE_WIDTH / 2, 0, 0.002]}
@@ -150,7 +150,7 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
         />
       </mesh>
 
-      {/* Back face */}
+      {/* Back face - pivot from left edge (x=0) */}
       <mesh
         ref={backRef}
         position={[PAGE_WIDTH / 2, 0, -0.002]}

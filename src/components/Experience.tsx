@@ -68,12 +68,8 @@ export function Experience({ onItemClick }: ExperienceProps) {
       <OrbitControls
         enableZoom={true}
         enablePan={false}
-        minPolarAngle={Math.PI / 6}
-        maxPolarAngle={Math.PI / 2.5}
-        minAzimuthAngle={-Math.PI / 3}
-        maxAzimuthAngle={Math.PI / 3}
-        minDistance={4}
-        maxDistance={10}
+        minDistance={3}
+        maxDistance={12}
       />
     </Canvas>
   );
