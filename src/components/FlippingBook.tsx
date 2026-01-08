@@ -41,11 +41,6 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
   const backRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
-  console.log({isCover});
-  console.log({isBack});
-  console.log({pageIndex});
-  console.log({currentPage});
-
   useCursor(hovered);
 
   // Determine if this page should be flipped
@@ -146,7 +141,7 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
           color={frontColor}
           roughness={isCover || isBack ? 0.75 : 0.9}
           metalness={isCover || isBack ? 0.1 : 0}
-          side={THREE.FrontSide}
+          side={THREE.DoubleSide}
         />
       </mesh>
 
@@ -165,22 +160,22 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
           color={backColor}
           roughness={0.9}
           metalness={0}
-          side={THREE.BackSide}
+          side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* Cover front decorations (only when not flipped) */}
-      {isCover && !isFlipped && (
-        <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
-          <mesh position={[0, 0.9, 0]}>
+      {/* Cover front decorations (always rendered, uses DoubleSide to be visible from both directions) */}
+      {isCover && (
+        <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z * 2]}>
+          <mesh position={[0, 0.9, 0.002]}>
             <planeGeometry args={[1.6, 0.03]} />
-            <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
+            <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} side={THREE.DoubleSide} />
           </mesh>
-          <mesh position={[0, -0.9, 0]}>
+          <mesh position={[0, -0.9, 0.002]}>
             <planeGeometry args={[1.6, 0.03]} />
-            <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
+            <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} side={THREE.DoubleSide} />
           </mesh>
-          <mesh rotation={[0, 0, Math.PI / 4]}>
+          <mesh position={[0, 0, 0.003]} rotation={[0, 0, Math.PI / 4]}>
             <planeGeometry args={[0.35, 0.35]} />
             <meshStandardMaterial 
               color="#c9a050" 
@@ -188,101 +183,102 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
               roughness={0.2}
               emissive="#c9a050"
               emissiveIntensity={hovered ? 0.4 : 0.15}
+              side={THREE.DoubleSide}
             />
           </mesh>
           {[[-0.7, 1.2], [0.7, 1.2], [-0.7, -1.2], [0.7, -1.2]].map(([x, y], i) => (
-            <mesh key={i} position={[x, y, 0]}>
+            <mesh key={i} position={[x, y, 0.002]}>
               <circleGeometry args={[0.05, 16]} />
-              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
+              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} side={THREE.DoubleSide} />
             </mesh>
           ))}
         </group>
       )}
 
-      {/* Inside cover decorations (when flipped to the left) */}
-      {isCover && isFlipped && (
+      {/* Inside cover decorations (on back face, always rendered with DoubleSide) */}
+      {isCover && (
         <group position={[PAGE_WIDTH / 2, 0, -DECORATION_Z]} rotation={[0, Math.PI, 0]}>
           <mesh>
             <planeGeometry args={[PAGE_WIDTH - 0.3, PAGE_HEIGHT - 0.3]} />
-            <meshStandardMaterial color="#231510" roughness={0.85} />
+            <meshStandardMaterial color="#231510" roughness={0.85} side={THREE.DoubleSide} />
           </mesh>
           {/* Four corner dots */}
           {[[-0.7, 1.1], [0.7, 1.1], [-0.7, -1.1], [0.7, -1.1]].map(([x, y], i) => (
             <mesh key={i} position={[x, y, 0.001]}>
               <circleGeometry args={[0.04, 16]} />
-              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
+              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} side={THREE.DoubleSide} />
             </mesh>
           ))}
         </group>
       )}
 
-      {/* Back cover front decorations */}
-      {isBack && !isFlipped && (
+      {/* Back cover front decorations (always rendered with DoubleSide) */}
+      {isBack && (
         <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
           <mesh>
             <planeGeometry args={[PAGE_WIDTH - 0.3, PAGE_HEIGHT - 0.3]} />
-            <meshStandardMaterial color="#231510" roughness={0.85} />
+            <meshStandardMaterial color="#231510" roughness={0.85} side={THREE.DoubleSide} />
           </mesh>
           {[[-0.7, 1.1], [0.7, 1.1], [-0.7, -1.1], [0.7, -1.1]].map(([x, y], i) => (
             <mesh key={i} position={[x, y, 0.001]}>
               <circleGeometry args={[0.04, 16]} />
-              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
+              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} side={THREE.DoubleSide} />
             </mesh>
           ))}
         </group>
       )}
 
-      {/* Back cover back decorations (when flipped to the left) */}
-      {isBack && isFlipped && (
+      {/* Back cover back decorations (always rendered with DoubleSide) */}
+      {isBack && (
         <group position={[PAGE_WIDTH / 2, 0, -DECORATION_Z]} rotation={[0, Math.PI, 0]}>
           <mesh>
             <planeGeometry args={[PAGE_WIDTH - 0.3, PAGE_HEIGHT - 0.3]} />
-            <meshStandardMaterial color="#231510" roughness={0.85} />
+            <meshStandardMaterial color="#231510" roughness={0.85} side={THREE.DoubleSide} />
           </mesh>
           {[[-0.7, 1.1], [0.7, 1.1], [-0.7, -1.1], [0.7, -1.1]].map(([x, y], i) => (
             <mesh key={i} position={[x, y, 0.001]}>
               <circleGeometry args={[0.04, 16]} />
-              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} />
+              <meshStandardMaterial color="#c9a050" metalness={0.8} roughness={0.2} side={THREE.DoubleSide} />
             </mesh>
           ))}
         </group>
       )}
 
-      {/* Content page FRONT decorations */}
-      {!isCover && !isBack && !isFlipped && (
+      {/* Content page FRONT decorations (always rendered with DoubleSide) */}
+      {!isCover && !isBack && (
         <group position={[PAGE_WIDTH / 2, 0, DECORATION_Z]}>
           <mesh position={[0, 0.3, 0]}>
             <planeGeometry args={[1.5, 1.1]} />
-            <meshStandardMaterial color="#e8e0d0" roughness={0.95} />
+            <meshStandardMaterial color="#e8e0d0" roughness={0.95} side={THREE.DoubleSide} />
           </mesh>
           <mesh position={[0, 0.9, 0.001]} rotation={[0, 0, 0.08]}>
             <planeGeometry args={[0.5, 0.1]} />
-            <meshStandardMaterial color="#f5efdc" transparent opacity={0.85} />
+            <meshStandardMaterial color="#f5efdc" transparent opacity={0.85} side={THREE.DoubleSide} />
           </mesh>
           {[-0.5, -0.7, -0.9].map((y, i) => (
             <mesh key={i} position={[0, y, 0]}>
               <planeGeometry args={[1.4, 0.015]} />
-              <meshStandardMaterial color="#d0c8b8" />
+              <meshStandardMaterial color="#d0c8b8" side={THREE.DoubleSide} />
             </mesh>
           ))}
         </group>
       )}
 
-      {/* Content page BACK decorations (visible when flipped) */}
-      {!isCover && !isBack && isFlipped && (
+      {/* Content page BACK decorations (always rendered with DoubleSide) */}
+      {!isCover && !isBack && (
         <group position={[PAGE_WIDTH / 2, 0, -DECORATION_Z]} rotation={[0, Math.PI, 0]}>
           <mesh position={[0, 0.3, 0]}>
             <planeGeometry args={[1.5, 1.1]} />
-            <meshStandardMaterial color="#e8e0d0" roughness={0.95} />
+            <meshStandardMaterial color="#e8e0d0" roughness={0.95} side={THREE.DoubleSide} />
           </mesh>
           <mesh position={[0, 0.9, 0.001]} rotation={[0, 0, -0.08]}>
             <planeGeometry args={[0.5, 0.1]} />
-            <meshStandardMaterial color="#f5efdc" transparent opacity={0.85} />
+            <meshStandardMaterial color="#f5efdc" transparent opacity={0.85} side={THREE.DoubleSide} />
           </mesh>
           {[-0.5, -0.7, -0.9].map((y, i) => (
             <mesh key={i} position={[0, y, 0]}>
               <planeGeometry args={[1.4, 0.015]} />
-              <meshStandardMaterial color="#d0c8b8" />
+              <meshStandardMaterial color="#d0c8b8" side={THREE.DoubleSide} />
             </mesh>
           ))}
         </group>

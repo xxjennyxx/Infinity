@@ -10,31 +10,45 @@ interface ExperienceProps {
 function Lights() {
   return (
     <>
-      {/* Main key light - warm tone from above */}
+      {/* Main key light - warm tone from front-right */}
       <directionalLight
         position={[2, 5, 3]}
-        intensity={1.5}
+        intensity={1.2}
         color="#ffeedd"
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
 
-      {/* Fill light from the left */}
+      {/* Fill light from the front-left */}
       <directionalLight
         position={[-3, 3, 2]}
-        intensity={0.6}
+        intensity={0.8}
         color="#e6d5c3"
       />
 
-      {/* Back rim light */}
-      <pointLight
-        position={[0, 2, -3]}
-        intensity={0.4}
-        color="#ffcc99"
+      {/* Back-right light (for 360 view) */}
+      <directionalLight
+        position={[2, 4, -3]}
+        intensity={1.0}
+        color="#ffeedd"
       />
 
-      {/* Ambient for base illumination */}
-      <ambientLight intensity={0.4} color="#f5e6d3" />
+      {/* Back-left light (for 360 view) */}
+      <directionalLight
+        position={[-2, 4, -3]}
+        intensity={0.8}
+        color="#e6d5c3"
+      />
+
+      {/* Top light for even illumination */}
+      <pointLight
+        position={[0, 6, 0]}
+        intensity={0.6}
+        color="#fff5e6"
+      />
+
+      {/* Higher ambient for base illumination */}
+      <ambientLight intensity={0.6} color="#f5e6d3" />
     </>
   );
 }
