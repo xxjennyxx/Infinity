@@ -46,10 +46,6 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
   // Determine if this page should be flipped
   const isFlipped = pageIndex < currentPage;
   const targetAngle = isFlipped ? -Math.PI : 0;
-  
-  // Is this the current active page (top of right stack or top of left stack)
-  const isCurrentRightPage = pageIndex === currentPage;
-  const isCurrentLeftPage = pageIndex === currentPage - 1;
 
   // Z-offset based on flip state
   const getZOffset = () => {
@@ -107,12 +103,15 @@ function Page({ pageIndex, currentPage, totalPages, isCover, isBack, onNextPage,
   const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     
-    if (isFlipped && isCurrentLeftPage) {
+    // Allow flipping from any viewing angle:
+    // - Click any flipped page (left side) to flip back
+    // - Click any unflipped page (right side) to flip forward
+    if (isFlipped) {
       onPrevPage();
-    } else if (!isFlipped && isCurrentRightPage) {
+    } else {
       onNextPage();
     }
-  }, [isFlipped, isCurrentLeftPage, isCurrentRightPage, onNextPage, onPrevPage]);
+  }, [isFlipped, onNextPage, onPrevPage]);
 
   // Cover: dark brown front, parchment back
   // Content pages: parchment both sides

@@ -45,7 +45,7 @@ function App() {
             {/* 3D Canvas */}
             <div className="absolute inset-0">
               <Experience onItemClick={handleItemClick} />
-            </div>
+      </div>
 
             {/* Title - centered at top */}
             <motion.div
@@ -80,7 +80,7 @@ function App() {
           <MemoryScroll key="detail-view" onBack={handleBackToBook} />
         )}
       </AnimatePresence>
-    </div>
+      </div>
   );
 }
 
