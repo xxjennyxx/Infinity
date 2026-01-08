@@ -71,7 +71,7 @@ The app will be available at `http://localhost:5173`
 infinity/
 ├── src/
 │   ├── components/
-│   │   ├── FlippingBook.tsx  # 3D Book with page flipping
+│   │   ├── FlippingBook.tsx  # 3D Book with page flip
 │   │   ├── Experience.tsx    # 3D scene container
 │   │   └── MemoryScroll.tsx  # Infinite scroll view
 │   ├── data/
