@@ -71,17 +71,14 @@ The app will be available at `http://localhost:5173`
 infinity/
 ├── src/
 │   ├── components/
-│   │   ├── Book.tsx          # 3D Book model
+│   │   ├── FlippingBook.tsx  # 3D Book with page flipping
 │   │   ├── Experience.tsx    # 3D scene container
 │   │   └── MemoryScroll.tsx  # Infinite scroll view
 │   ├── data/
 │   │   └── memories.ts       # Memory data
 │   ├── App.tsx               # Root component
 │   └── main.tsx              # Entry point
-└── docs/                     # Documentation
 ```
-
-See [docs/DirectoryStructure.md](./docs/DirectoryStructure.md) for detailed structure.
 
 ## Usage
 
@@ -133,17 +130,6 @@ colors: {
   'dusty-rose': '#d4a5a5',
 }
 ```
-
-## Documentation
-
-- [Project Goals](./docs/ProjectGoals.md)
-- [Directory Structure](./docs/DirectoryStructure.md)
-- [Task Tracking](./docs/TASK.md)
-- [Changelog](./docs/CHANGELOG.md)
-
-## License
-
-MIT License - See [LICENSE](./LICENSE) for details.
 
 ---
 
